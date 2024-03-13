@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <div id="chat-output"></div>
+    <form id="chat-form">
+        <input id="chat-input" name="chat-input" type="text" placeholder="write your message..."></input>
+        <button type="submit">submit</button>
+    </form>
+    <script>
+        const chatForm = document.querySelector("#chat-form")
+        const chatInput = document.querySelector("#chat-input")
+
+        const chatOutput = document.querySelector("#chat-output")
+
+        function displayMessage(text,type){
+            const messageDiv= document.createElement("div")
+            messageDiv.classList.add("chat-message");
+            if(type === "sent-message") {
+                messageDiv.classList.add("sent-message")
+            } else if(type === "received-message") {
+                messageDiv.classList.add("received-message")
+            }
+            messageDiv.textContent = text;
+            chatOutput.appendChild(messageDiv)
+        }
+
+        function displayLoading(){
+            const loadingDiv = document.createElement("div")
+            loadingDiv.classList.add("loading-dots")
+            loadingDiv.innerHTML = "<div></div><div></div><div></div>"
+            chatOutput.appendChild(loadingDiv)
+            return loadingDiv
+        }
+
+        chatForm.addEventListener("submit",function(e){
+            e.preventDefault()
+            const messageText = chatInput.value.trim()
+            if(messageText === " ") return
+
+
+            displayMessage(messageText , "sent-message")
+            const loadingElement = displayLoading()
+
+
+            fetch("/chat",{
+                method : "POST",
+                body : JSON.stringify({chat : messageText}),
+                headers : {
+                    'Content-Type' : 'application/json'
+                }
+                
+            })
+            .then(response => {
+                if(!response.ok){
+                    throw new Error("Network response was bad")
+                }
+                return response.json()
+            })
+            .then(data => {
+                chatOutput.removeChild(loadingElement)
+                displayMessage(data.chat , "received-message")
+            })
+            .catch(error => {
+                console.error("Error: ",error)
+                chatOutput.removeChild(loadingElement);
+                displayMessage("failed-to-send-message","received-message")
+            })
+            chatInput.value = " "
+        })
+
+        function updateScroll(){
+            chatOutput.scrollTop = chatOutput.scrollHeight
+        }
+
+    </script>
+    
+</body>
+</html>
